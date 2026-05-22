@@ -46,3 +46,11 @@ ironlink_rudp/
     └── bin/
         ├── client.rs   # Benchmark client pushing 5MB of payload
         └── server.rs   # Listener processing reliable streams
+
+---
+
+## How to run it locally
+
+fork and clone the repo
+open a terminal window and run: `cargo run --bin server`
+open another and run `cargo run --bin client`
