@@ -51,6 +51,6 @@ ironlink_rudp/
 
 ## How to run it locally
 
-fork and clone the repo
-open a terminal window and run: `cargo run --bin server`
-open another and run `cargo run --bin client`
+* fork and clone the repo
+* open a terminal window and run: `cargo run --bin server`
+* open another and run `cargo run --bin client`
