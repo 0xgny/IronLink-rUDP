@@ -11,10 +11,14 @@ By wrapping inherently stateless and unreliable UDP sockets in a stateful layer,
 * **Stop-and-Wait ARQ:** Ensures strict sequence ordering by requiring explicit acknowledgments (ACKs) before advancing the transmission window.
 * **Dynamic RTT Measurement (Jacobson/Karels):** Replaces static timeouts by calculating a Smoothed Round Trip Time (SRTT) and RTT Variance (RTTVAR) to dynamically adjust the Retransmission Timeout (RTO) to current network conditions.
 * **Karn's Algorithm:** Mitigates the "Retransmission Ambiguity" problem by isolating RTT calculations strictly to packets acknowledged on their first transmission attempt.
-* **Exponential Backoff:** Automatically doubles the timeout window during network congestion events to prevent flood-induced packet loss.
-* **Built-in Telemetry:** Tracks bytes sent, throughput, packet rates, and retransmission overhead in real-time.
+* **Exponential Backoff:** Each successive timeout doubles the retransmission window (500ms -> 1s -> 2s, capped) to prevent flood-induced packet loss. Per Karn's Algorithm the backed-off value stays in force until a fresh, unambiguous RTT sample resets it.
+* **Built-in Telemetry:** Live counters on the socket expose throughput, packet rate, and retransmission overhead at any point during a transfer, not just at the end.
+* **Per-Peer State:** Sequence numbers and RTT estimates are tracked per remote address, so multiple clients can share one socket without corrupting each other's streams. ACKs are only accepted from the address the packet was sent to.
+* **Bounded Retries:** A packet is transmitted at most `DEFAULT_MAX_TRANSMISSION_ATTEMPTS` (10) times before `send_reliable` returns `TimedOut`, so an unreachable peer surfaces an error instead of hanging.
 
 ---
+
+> **New here?** [`design/design-doc.md`](design/design-doc.md) explains the whole project from first principles, assuming no Rust and no networking background.
 
 ## Protocol Architecture
 
@@ -26,6 +30,8 @@ IronLink uses a minimal 5-byte header to maximize payload efficiency:
 | **Seq Num** | 4 Bytes | `u32` | The sequence number of the packet. |
 | **Flag** | 1 Byte | `u8` | `0x01` for DATA, `0x02` for ACK. |
 | **Payload** | Variable | `[u8]` | The application data. |
+
+Datagrams are capped at `MAX_PACKET_SIZE` (2048 bytes), giving a `MAX_PAYLOAD_SIZE` of 2043 bytes per packet. `send_reliable` returns `InvalidInput` for anything larger rather than letting the kernel silently truncate it — there is no fragmentation layer.
 
 ### 2. The Transmission State Machine
 * **Sender:** Wraps payload in a DATA packet, assigns a sequence number, and fires it over the UDP socket. It calculates an optimal timeout (RTO) and blocks. If an ACK with the matching sequence number arrives, it advances. If the timer expires, it triggers Exponential Backoff and retransmits.
@@ -46,11 +52,18 @@ ironlink_rudp/
     └── bin/
         ├── client.rs   # Benchmark client pushing 5MB of payload
         └── server.rs   # Listener processing reliable streams
+├── design/
+│   └── design-doc.md   # Full walkthrough for newcomers
+└── tests/
+    └── integration.rs  # Round-trip, payload limits, backoff timing, multi-client, retry cap
 ```
 ---
 
 ## How to run it locally
 
 * fork and clone the repo
-* open a terminal window and run: `cargo run --bin server`
-* open another and run `cargo run --bin client`
+* open a terminal window and run: `cargo run --release --bin server`
+* open another and run `cargo run --release --bin client`
+* run the test suite with `cargo test` (6 tests, ~4s)
+
+Use `--release` for the benchmark; an unoptimized build reports several times lower throughput.

@@ -1,5 +1,4 @@
 use ironlink_rudp::socket::RUdpSocket;
-use std::time::Instant;
 
 fn main() {
     let mut client = RUdpSocket::bind("127.0.0.1:0").expect("Failed to bind");
@@ -10,23 +9,31 @@ fn main() {
 
     println!("Starting Benchmark: Sending {} packets (1KB each)...", num_packets);
 
-    let start_time = Instant::now();
-
-    for _ in 0..num_packets {
+    for i in 0..num_packets {
         client.send_reliable(&payload, server_addr).expect("Send failed");
+
+        // Live telemetry, straight off the socket, every 1000 packets.
+        if (i + 1) % 1000 == 0 {
+            println!(
+                "  [{:>5}/{}] {:>6.2} MB/s | {:>7.0} pkt/s | {} retransmits ({:.2}%)",
+                i + 1,
+                num_packets,
+                client.stats.throughput_mbps(),
+                client.stats.packet_rate(),
+                client.stats.retransmissions,
+                client.stats.retransmission_overhead_pct(),
+            );
+        }
     }
 
-    let duration = start_time.elapsed();
-    let seconds = duration.as_secs_f64();
-    let total_mb = (client.stats.total_bytes_sent as f64) / 1_048_576.0;
-    let throughput_mbps = total_mb / seconds;
-    let packets_per_sec = (client.stats.packets_sent as f64) / seconds;
-    let overhead_pct = (client.stats.retransmissions as f64 / client.stats.packets_sent as f64) * 100.0;
-
     println!("\n--- Benchmark Results ---");
-    println!("Time Elapsed:    {:.2} seconds", seconds);
-    println!("Total Data Sent: {:.2} MB", total_mb);
-    println!("Throughput:      {:.2} MB/s", throughput_mbps);
-    println!("Packet Rate:     {:.0} packets/sec", packets_per_sec);
-    println!("Retransmissions: {} ({:.2}% overhead)", client.stats.retransmissions, overhead_pct);
+    println!("Time Elapsed:    {:.2} seconds", client.stats.elapsed().as_secs_f64());
+    println!("Total Data Sent: {:.2} MB", client.stats.total_mb());
+    println!("Throughput:      {:.2} MB/s", client.stats.throughput_mbps());
+    println!("Packet Rate:     {:.0} packets/sec", client.stats.packet_rate());
+    println!(
+        "Retransmissions: {} ({:.2}% overhead)",
+        client.stats.retransmissions,
+        client.stats.retransmission_overhead_pct()
+    );
 }
