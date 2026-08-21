@@ -1,6 +1,6 @@
-# IronLink rUDP: Reliable User-Space Transport Protocol
+# rUDP: High-Performance Network Protocol Implementation
 
-**IronLink rUDP** is a custom Reliable UDP transport protocol written in Rust. It serves as a user-space implementation of the core reliability mechanisms required by high-performance network interconnects (similar to the foundational concepts in NVIDIA/Mellanox RoCE). 
+This project; **(which I named IronLink-rUDP for some reason)** is a custom Reliable UDP transport protocol written in Rust. It serves as a user-space implementation of the core reliability mechanisms required by high-performance network interconnects (similar to the foundational concepts in NVIDIA/Mellanox RoCE). 
 
 By wrapping inherently stateless and unreliable UDP sockets in a stateful layer, IronLink guarantees exact packet ordering and assured delivery without the heavy connection overhead of TCP.
 
@@ -42,7 +42,7 @@ Datagrams are capped at `MAX_PACKET_SIZE` (2048 bytes), giving a `MAX_PAYLOAD_SI
 ## Project Structure
 
 ```text
-ironlink_rudp/
+rUDP/
 ├── Cargo.toml          # Crate metadata and dependencies
 ├── README.md           # This documentation
 └── src/
