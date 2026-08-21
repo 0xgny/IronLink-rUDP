@@ -1,6 +1,6 @@
 # rUDP: High-Performance Network Protocol Implementation
 
-This project; **(which I named IronLink-rUDP for some reason)** is a custom Reliable UDP transport protocol written in Rust. It serves as a user-space implementation of the core reliability mechanisms required by high-performance network interconnects (similar to the foundational concepts in NVIDIA/Mellanox RoCE). 
+This project **(which I named IronLink-rUDP for some reason)** is a custom Reliable UDP transport protocol written in Rust. It serves as a user-space implementation of the core reliability mechanisms required by high-performance network interconnects (similar to the foundational concepts in NVIDIA/Mellanox RoCE). 
 
 By wrapping inherently stateless and unreliable UDP sockets in a stateful layer, IronLink guarantees exact packet ordering and assured delivery without the heavy connection overhead of TCP.
 
